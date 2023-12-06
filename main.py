@@ -2,10 +2,16 @@ import datetime
 import pandas as pd
 from docxtpl import DocxTemplate
 import streamlit as st
-from coldata import col_names, date_cols
+from coldata import col_names, date_colgs
 import base64
 from io import BytesIO
-import openpyxl
+
+# Ensure openpyxl is installed, needed for pd.read_excel to work with .xlsx files
+try:
+    import openpyxl
+except ImportError:
+    st.error("Missing optional dependency 'openpyxl'. Use pip or conda to install openpyxl.")
+    raise
 
 # Streamlit page configuration
 st.set_page_config(page_title="Final Training Plan Generator", layout="wide")
