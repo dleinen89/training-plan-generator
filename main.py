@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 from docxtpl import DocxTemplate
 import streamlit as st
-from coldata import col_names, date_colgs
+from coldata import col_names, date_cols
 import base64
 from io import BytesIO
 
