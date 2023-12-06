@@ -6,7 +6,6 @@ from coldata import col_names, date_cols
 import io
 import base64
 from tempfile import NamedTemporaryFile
-import openpyxl
 
 # Streamlit page configuration
 st.set_page_config(page_title="Final Training Plan Generator", layout="wide")
