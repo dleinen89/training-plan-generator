@@ -29,7 +29,7 @@ st.markdown(f"""
     }}
 
     /* Buttons */
-    .stButton > button {{
+    .stButton > button, .stDownloadButton > button {{
         background-color: {HEADER_COLOR};
         color: #0e1117;
         border: none;
@@ -38,7 +38,7 @@ st.markdown(f"""
         font-weight: bold;
         transition: all 0.3s ease;
     }}
-    .stButton > button:hover {{
+    .stButton > button:hover, .stDownloadButton > button:hover {{
         background-color: #2ac1de;
         color: #ffffff;
     }}
@@ -128,11 +128,13 @@ def main():
                             doc_output = generate_training_plan(user_data, template_file)
                             
                             if doc_output:
+                                st.success("Training plan generated successfully!")
                                 st.download_button(
                                     label="Download Training Plan",
                                     data=doc_output,
-                                    file_name=f"Training_Plan_{user_data['StudentFirstName']}_{user_data['StudentLastName']}.docx",
-                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    file_name=f"{user_data['StudentFirstName']} {user_data['StudentLastName']} Training Plan final.docx",
+                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    key="download_button"
                                 )
                             else:
                                 st.error("Failed to generate training plan.")

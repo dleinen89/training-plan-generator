@@ -1,24 +1,35 @@
 import streamlit as st
 import requests
+import os
 from io import BytesIO
 from docxtpl import DocxTemplate
 from zipfile import ZipFile, BadZipFile
 
 def get_template_from_github(repo_owner, repo_name, file_path, branch='main'):
-    url = f"https://raw.githubusercontent.com/{repo_owner}/{repo_name}/{branch}/{file_path}"
+    url = f"https://github.com/{repo_owner}/{repo_name}/raw/{branch}/{file_path}"
+    
     try:
         response = requests.get(url)
         response.raise_for_status()
         
-        # Check if the content type is correct for a Word document
-        if 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' not in response.headers.get('Content-Type', ''):
-            raise ValueError("Downloaded file is not a valid Word document")
+        content_type = response.headers.get('Content-Type', '')
+        content_length = response.headers.get('Content-Length', 'Unknown')
         
-        # Try to open the file as a zip (Word documents are zip files)
-        try:
-            ZipFile(BytesIO(response.content))
-        except BadZipFile:
-            raise ValueError("Downloaded file is not a valid Word document (not a zip file)")
+        # Check file extension
+        file_extension = os.path.splitext(file_path)[1].lower()
+        if file_extension != '.docx':
+            raise ValueError(f"File does not have .docx extension. Extension: {file_extension}")
+        
+        # Accept both specific Word document type and generic binary type
+        valid_types = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/octet-stream'
+        ]
+        if content_type not in valid_types:
+            raise ValueError(f"Unexpected content type. Got: {content_type}, Expected one of: {', '.join(valid_types)}")
+        
+        if int(content_length) < 1000:  # Arbitrary small size, adjust as needed
+            raise ValueError(f"Downloaded file is too small to be a valid Word document. Size: {content_length} bytes")
         
         return BytesIO(response.content)
     except requests.RequestException as e:
