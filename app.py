@@ -83,7 +83,6 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# Streamlit app
 def main():
     st.title("Final Training Plan Generator")
 
@@ -95,59 +94,65 @@ def main():
     uploaded_file = st.file_uploader("Choose an Excel file", type="xlsx")
 
     if uploaded_file is not None:
-        df = load_excel_data(uploaded_file)
+        with st.spinner("Loading Excel file..."):
+            df = load_excel_data(uploaded_file)
+        
+        if df is not None:
+            st.success("Excel file loaded successfully!")
+            search_term = st.text_input("Search by Registration Number, Employee Number, Last Name, or First Name")
+            if search_term:
+                results = search_users(df, search_term)
+                if not results.empty:
+                    st.write(f"Found {len(results)} results:")
+                    selected_user = st.selectbox(
+                        "Select a user:",
+                        options=results.index,
+                        format_func=lambda x: f"{results.loc[x, 'StudentFirstName']} {results.loc[x, 'StudentLastName']} - RegoNum: {results.loc[x, 'RegoNum']}, EmployeeNum: {results.loc[x, 'EmployeeNum']}"
+                    )
 
-        search_term = st.text_input("Search by Registration Number, Employee Number, Last Name, or First Name")
-        if search_term:
-            results = search_users(df, search_term)
-            if not results.empty:
-                st.write(f"Found {len(results)} results:")
-                selected_user = st.selectbox(
-                    "Select a user:",
-                    options=results.index,
-                    format_func=lambda x: f"{results.loc[x, 'StudentFirstName']} {results.loc[x, 'StudentLastName']} - RegoNum: {results.loc[x, 'RegoNum']}, EmployeeNum: {int(results.loc[x, 'EmployeeNum'])}"
-                )
+                    user_data = results.loc[selected_user]
+                    
+                    col1, col2 = st.columns([1, 2])
+                    
+                    with col1:
+                        display_user_profile(user_data)
 
-                user_data = results.loc[selected_user]
-                
-                col1, col2 = st.columns([1, 2])
-                
-                with col1:
-                    display_user_profile(user_data)
-
-                with col2:
-                    st.subheader("Completion Rate:")
-                    display_completion_rate(user_data['CompletionRate'])
-                
-                if st.button("Generate Training Plan"):
-                    if pd.isna(user_data['CompletionRate']) or float(user_data['CompletionRate']) < 1:
-                        st.error("Cannot generate final training plan. Completion rate is not 100%.")
-                    else:
-                        template_file = get_template_from_github(repo_owner, repo_name, template_path)
-                        if template_file:
-                            doc_output = generate_training_plan(user_data, template_file)
-                            
-                            if doc_output:
-                                st.success("Training plan generated successfully!")
-                                st.download_button(
-                                    label="Download Training Plan",
-                                    data=doc_output,
-                                    file_name=f"{user_data['StudentFirstName']} {user_data['StudentLastName']} Training Plan final.docx",
-                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                    key="download_button"
-                                )
-                            else:
-                                st.error("Failed to generate training plan.")
+                    with col2:
+                        st.subheader("Completion Rate:")
+                        display_completion_rate(user_data['CompletionRate'])
+                    
+                    if st.button("Generate Training Plan"):
+                        if pd.isna(user_data['CompletionRate']) or float(user_data['CompletionRate']) < 1:
+                            st.error("Cannot generate final training plan. Completion rate is not 100%.")
                         else:
-                            st.error("Failed to retrieve template from GitHub.")
+                            with st.spinner("Generating training plan..."):
+                                template_file = get_template_from_github(repo_owner, repo_name, template_path)
+                                if template_file:
+                                    doc_output = generate_training_plan(user_data, template_file)
+                                    
+                                    if doc_output:
+                                        st.success("Training plan generated successfully!")
+                                        st.download_button(
+                                            label="Download Training Plan",
+                                            data=doc_output,
+                                            file_name=f"{user_data['StudentFirstName']} {user_data['StudentLastName']} Training Plan final.docx",
+                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                            key="download_button"
+                                        )
+                                    else:
+                                        st.error("Failed to generate training plan.")
+                                else:
+                                    st.error("Failed to retrieve template from GitHub.")
 
-                # Display additional user information
-                with st.expander("View All User Data"):
-                    st.write(user_data)
+                    # Display additional user information
+                    with st.expander("View All User Data"):
+                        st.write(user_data)
+                else:
+                    st.info("No results found.")
             else:
-                st.info("No results found.")
+                st.info("Enter a search term to find users.")
         else:
-            st.info("Enter a search term to find users.")
+            st.error("Failed to load Excel file. Please check the file and try again.")
     else:
         st.info("Please upload an Excel file to begin.")
 

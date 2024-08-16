@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import os
+import pandas as pd
 from io import BytesIO
 from docxtpl import DocxTemplate
 from zipfile import ZipFile, BadZipFile
@@ -47,6 +48,13 @@ def generate_training_plan(user_data, template_file):
         return None
     
     context = user_data.to_dict()
+    
+    # Ensure all values are strings to avoid issues with nan
+    for key, value in context.items():
+        if pd.isna(value):
+            context[key] = ""
+        else:
+            context[key] = str(value)
     
     try:
         doc.render(context)

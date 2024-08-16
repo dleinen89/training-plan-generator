@@ -1,6 +1,33 @@
 import pandas as pd
 import streamlit as st
 from coldata import col_names, date_cols, str_cols, int_cols, float_cols
+from datetime import datetime, time
+
+def process_date_column(series):
+    def process_value(value):
+        if pd.isna(value):
+            return ""
+        try:
+            return pd.to_datetime(value).strftime('%d/%m/%Y')
+        except ValueError:
+            return str(value)  # Keep original string if it's not a valid date
+    
+    return series.apply(process_value)
+
+def process_date_column(series):
+    def process_value(value):
+        if pd.isna(value):
+            return ""
+        if isinstance(value, time):
+            return value.strftime('%H:%M:%S')
+        try:
+            if isinstance(value, datetime):
+                return value.strftime('%d/%m/%Y')
+            return pd.to_datetime(value).strftime('%d/%m/%Y')
+        except ValueError:
+            return str(value)  # Keep original string if it's not a valid date
+    
+    return series.apply(process_value)
 
 def load_excel_data(uploaded_file):
     try:
@@ -21,7 +48,7 @@ def load_excel_data(uploaded_file):
         
         # Process date columns
         for col in date_cols:
-            df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y')
+            df[col] = process_date_column(df[col])
         
         # Convert numeric columns to appropriate types
         for col in int_cols:
@@ -30,6 +57,10 @@ def load_excel_data(uploaded_file):
             df[col] = pd.to_numeric(df[col], errors='coerce')
         
         # Ensure all specified columns are present
+        missing_cols = set(col_names) - set(df.columns)
+        if missing_cols:
+            raise ValueError(f"Missing columns in Excel file: {', '.join(missing_cols)}")
+        
         df = df[col_names]
         
         # Drop specific columns
@@ -44,9 +75,12 @@ def load_excel_data(uploaded_file):
             df[col] = df[col].astype(str)
         
         return df
+    except ValueError as ve:
+        st.error(f"Error in Excel file structure: {str(ve)}")
     except Exception as e:
         st.error(f"Failed to load Excel file: {str(e)}")
-        return None
+        st.error("Please check if the Excel file has the expected structure and column names.")
+    return None
 
 def search_users(df, search_term):
     return df[
